@@ -1,0 +1,14 @@
+pgbench (18.0)
+transaction type: gen-sales-transactions.sql
+scaling factor: 1
+query mode: simple
+number of clients: 10
+number of threads: 5
+maximum number of tries: 1
+duration: 18000 s
+number of transactions actually processed: 13134371
+number of failed transactions: 0 (0.000%)
+latency average = 13.703 ms
+latency stddev = 23.233 ms
+initial connection time = 81.915 ms
+tps = 729.690177 (without initial connection time)

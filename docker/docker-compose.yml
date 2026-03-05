@@ -1,0 +1,94 @@
+services:
+  db:
+    image: vibhorkumar123/pg18-vector:v2.4
+    platform: linux/amd64
+    container_name: pg18book
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    shm_size: "512mb"
+
+    volumes:
+      - pg_data_prod:/var/lib/pgsql/18/data
+
+      # Optional: mount user override include file (recommended pattern)
+      # - ./my-user.conf:/var/lib/pgsql/18/data/conf.d/99-user.conf:ro
+
+      # Optional: init scripts (only on first init)
+      # - ./initdb:/docker-entrypoint-initdb.d:ro
+
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_DB: "postgres"
+
+      # Use a secret file for password (see start note below)
+      # We'll export POSTGRES_PASSWORD from the secret in a tiny wrapper command.
+      # (No image change needed.)
+
+      # Logging: prefer container logs over file logs
+      PG_LOG_DESTINATION: "stderr"
+      PG_LOGGING_COLLECTOR: "off"
+      PG_LOG_STATEMENT: "none"
+      PG_LOG_MIN_DURATION_STATEMENT: "1000"
+      PG_LOG_LINE_PREFIX: "%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h "
+
+      # Memory/perf (pick values appropriate for host)
+      PG_SHARED_BUFFERS: "512MB"
+      PG_EFFECTIVE_CACHE_SIZE: "2GB"
+      PG_WORK_MEM: "8MB"
+      PG_MAINTENANCE_WORK_MEM: "128MB"
+
+      # Connections/workers
+      PG_MAX_CONNECTIONS: "200"
+      PG_MAX_WORKER_PROCESSES: "30"
+      PG_MAX_PARALLEL_WORKERS: "8"
+      PG_MAX_PARALLEL_WORKERS_PER_GATHER: "2"
+      PG_MAX_PARALLEL_MAINTENANCE_WORKERS: "2"
+      PG_MAX_LOGICAL_REPLICATION_WORKERS: "20"
+      PG_MAX_REPLICATION_SLOTS: "20"
+
+      # WAL/checkpoints
+      PG_MAX_WAL_SIZE: "4GB"
+      PG_CHECKPOINT_TIMEOUT: "10min"
+
+      # Network
+      PG_LISTEN_ADDRESSES: "*"
+      PG_PORT: "5432"
+
+      # Autovacuum
+      PG_AUTOVACUUM: "on"
+      PG_AUTOVACUUM_MAX_WORKERS: "3"
+
+      # Archive/SSL (keep as you had; you can later wire certs via mounted files)
+      PG_ARCHIVE_MODE: "off"
+      PG_ARCHIVE_COMMAND: ""
+      PG_SSL: "off"
+
+    secrets:
+      - pg_password
+
+    # Read password from secret and pass to process environment
+    command: >
+      bash -lc 'export POSTGRES_PASSWORD="$(cat /run/secrets/pg_password)";
+                exec /usr/local/bin/start-postgres.sh'
+
+    healthcheck:
+      test: ["CMD-SHELL", "/usr/pgsql-18/bin/pg_isready -h localhost -p 5432 -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    mem_limit: "4g"
+    cpus: "2.0"
+
+networks:
+  default:
+    name: postgres_network_prod
+
+volumes:
+  pg_data_prod:
+
+secrets:
+  pg_password:
+    file: ./secrets/pg_password.txt
