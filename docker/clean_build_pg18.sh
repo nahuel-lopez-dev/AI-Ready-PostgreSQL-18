@@ -27,6 +27,8 @@ REMOVE_OLD_CONTAINER="${REMOVE_OLD_CONTAINER:-1}"  # set to 0 to keep old contai
 # Wait settings
 WAIT_SECONDS="${WAIT_SECONDS:-60}"
 SLEEP_INTERVAL="${SLEEP_INTERVAL:-2}"
+CONTAINER_STARTED=0
+VALIDATION_PASSED=0
 
 echo "=== PostgreSQL 18 + pgvector Clean Build Script ==="
 echo "Image:     ${FULL_IMAGE_NAME}"
@@ -105,6 +107,8 @@ start_container() {
     -e "POSTGRES_PASSWORD=${POSTGRES_PASSWORD}" \
     "${FULL_IMAGE_NAME}" >/dev/null
 
+  CONTAINER_STARTED=1
+
   echo "  Container started: ${CONTAINER_NAME}"
   echo
 }
@@ -147,25 +151,29 @@ run_tests() {
   echo
   echo "  All tests passed!"
   echo
+
+  VALIDATION_PASSED=1
 }
 
 print_summary() {
   echo "=== Build completed successfully! ==="
   echo
-  echo "Your PostgreSQL 18 container is running."
-  echo "Connection details:"
-  echo "  Host:     localhost"
-  echo "  Port:     ${HOST_PORT}"
-  echo "  User:     ${POSTGRES_USER}"
-  echo "  Database: ${POSTGRES_DB}"
+  echo "Image built and validation completed."
+  echo "The verification container will be removed automatically."
   echo
-  echo "Useful commands:"
-  echo "  Connect to psql:  docker exec -it ${CONTAINER_NAME} psql -U ${POSTGRES_USER} -d ${POSTGRES_DB}"
-  echo "  Check logs:       docker logs ${CONTAINER_NAME}"
-  echo "  Stop container:   docker stop ${CONTAINER_NAME}"
-  echo "  Start container:  docker start ${CONTAINER_NAME}"
-  echo "  Remove container: docker rm -f ${CONTAINER_NAME}"
-  echo
+}
+
+remove_test_container() {
+  if [[ "${CONTAINER_STARTED}" != "1" ]]; then
+    return 0
+  fi
+
+  if docker ps -a --format "{{.Names}}" | grep -qx "${CONTAINER_NAME}"; then
+    echo "Cleaning up verification container: ${CONTAINER_NAME}"
+    docker rm -f "${CONTAINER_NAME}" >/dev/null || true
+  fi
+
+  CONTAINER_STARTED=0
 }
 
 on_error() {
@@ -175,7 +183,22 @@ on_error() {
   docker logs "${CONTAINER_NAME}" 2>/dev/null || true
   echo
 }
+
+on_exit() {
+  local exit_code=$?
+
+  remove_test_container
+
+  if [[ "${exit_code}" -ne 0 ]]; then
+    echo "Verification failed. Any errored container has been removed."
+  elif [[ "${VALIDATION_PASSED}" == "1" ]]; then
+    echo "Verification completed. Temporary container removed."
+  fi
+
+  exit "${exit_code}"
+}
 trap on_error ERR
+trap on_exit EXIT
 
 main() {
   check_docker
