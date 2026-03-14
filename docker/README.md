@@ -91,6 +91,11 @@ Connect:
 docker exec -it pg18 psql -U postgres
 ```
 
+Build locally:
+```bash
+docker build -t vibhorkumar123/pg18-vector:v2.4 .
+```
+
 ## Configuration Model
 
 Configuration layering (important)
@@ -140,7 +145,7 @@ This allows:
 | `PG_MAX_WORKER_PROCESSES` | `8` |
 | `PG_MAX_PARALLEL_WORKERS` | `8` |
 | `PG_MAX_PARALLEL_WORKERS_PER_GATHER` | `2` |
-| `PG_MAX_PARALLEL_MAINTENANCE_WORKERS` | `2` |
+| `PG_MAX_PARALLEL_MAINTENANCE_WORKERS` | `20` |
 
 
 
@@ -188,10 +193,9 @@ docker exec pg18 /usr/local/bin/test-all-extensions.sh
 
 ## Init Scripts (`/docker-entrypoint-initdb.d`)
 
-- Executed **only on first initialization**
-- Supports:
-  - `*.sql`
-  - `*.sh`
+- Executed only on first initialization of a fresh `PGDATA` volume
+- Supports `*.sql` and `*.sh`
+- The image uses `PG_INIT_DIR=/docker-entrypoint-initdb.d`
 
 Example:
 
@@ -221,38 +225,57 @@ max_connections = 200
 
 # Docker Compose
 
-Development
+This repository includes a single compose file:
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+docker compose up -d
 ```
 
-Production-ish
+The compose setup:
+
+- uses [`docker-compose.yml`](./docker-compose.yml)
+- reads the database password from `./secrets/pg_password.txt`
+- starts the container with `start-postgres.sh`
+- persists data in the named volume `pg_data_prod`
+- configures a healthcheck with `pg_isready`
+
+Bring it down:
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d
+docker compose down
 ```
-
-The prod compose:
-
-- uses Docker secrets
-- avoids plaintext passwords
-- prefers stderr logging
 
 
 
 #  Clean Build Script
 
-For full rebuild + validation:
+For a full rebuild and validation run:
 
 ```bash
 ./clean_build_pg18.sh
 ```
 
-Optional flags:
+What it does:
+
+- removes the old `pg18book` container first unless `REMOVE_OLD_CONTAINER=0`
+- removes the old image first unless `REMOVE_OLD_IMAGE=0`
+- rebuilds with `--no-cache` and `--pull`
+- starts a temporary verification container
+- waits for PostgreSQL readiness
+- runs `test-pgvector.sh` and `test-all-extensions.sh`
+- removes the verification container on both success and failure
+- prints container logs before cleanup when validation fails
+
+Optional environment overrides:
 
 ```bash
 POSTGRES_PASSWORD=secret DO_SYSTEM_PRUNE=1 ./clean_build_pg18.sh
+```
+
+Other useful toggles:
+
+```bash
+REMOVE_OLD_IMAGE=0 REMOVE_OLD_CONTAINER=0 WAIT_SECONDS=90 ./clean_build_pg18.sh
 ```
 
 #  Operational Notes
@@ -260,6 +283,7 @@ POSTGRES_PASSWORD=secret DO_SYSTEM_PRUNE=1 ./clean_build_pg18.sh
 - Bootstrap server is always stopped before final handoff
 - Stale postmaster.pid files are handled safely
 - Tests are idempotent and defensive
+- The clean-build verification container is ephemeral and does not remain running after validation
 
 
 # Author
@@ -268,4 +292,3 @@ POSTGRES_PASSWORD=secret DO_SYSTEM_PRUNE=1 ./clean_build_pg18.sh
 - Technology Leader - PostgreSQL, Data Platforms, AI
 - LinkedIn: https://www.linkedin.com/in/vibhork
 - GitHub: https://github.com/vibhorkumar123
-
