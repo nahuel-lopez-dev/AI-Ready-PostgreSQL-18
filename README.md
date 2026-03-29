@@ -74,6 +74,15 @@ The scripts have been tested with Docker Desktop 4.53.
 
 The file docker-compose.yml can be used to generate a Docker container that includes all the required extensions.
 
+### 1. Create the Docker image
+Run `./clean_build_pg18.sh` to create a Docker image (in folder /docker). This will create an image called `vibhorkumar123/pg18-vector:v2.4`
+
+### 2. Create the Docker container
+
+Run `docker compose up -d` to create and start the container. The container will be called `pg18book`.
+This container is configured to support the examples in the book, including all the necessary extensions, and the one-time server configurations for logical replication, `wal_level`, and `max_replication_workers`.
+
+
 ---
 
 ## Instructions (using `psql`)
