@@ -16,6 +16,7 @@ de Packt sin conflictos.
    ```
    docker compose up -d
    ```
+
 2. Conectar:
    ```
    psql -h 127.0.0.1 -p 5433 -U postgres -d postgres
@@ -23,22 +24,22 @@ de Packt sin conflictos.
    Password: `postgres`
 
 3. Prueba para verificar extensiones cargadas:
-4. 
+   
    ```sql
    SELECT extname, extversion FROM pg_extension;
    ```
-5. Al terminar de usar la db, parar el contenedor (libera RAM, tengo 8GB):
+
+4. Al terminar de usar la db, parar el contenedor (libera RAM, tengo 8GB):
    ```
    docker compose stop
    ```
    (esto NO borra los datos; `docker compose start` los retoma tal cual quedaron)
 
-6. Para retomar el trabajo:
+5. Para retomar el trabajo:
 
    ```
    docker compose start
    ```
-
 
 ## Primera vez / si no existe el secret
 
@@ -47,39 +48,6 @@ Si falta `secrets/pg_password.txt`, el contenedor no arranca:
 mkdir -p secrets
 echo -n "postgres" > secrets/pg_password.txt
 docker compose up -d
-```
-
-## Troubleshooting puerto ocupado
-
-**Puerto ocupado por otra instancia:**
-```
-nano docker-compose.yml
-```
-Revisar y ajustar:
-```
-ports:
-  - "5433:5432"
-```
-Verificar que quedó guardado:
-```
-cat docker-compose.yml | grep -A1 ports
-```
-Recrear el contenedor con la config nueva:
-```
-docker compose down
-docker compose up -d
-docker ps
-```
-Confirmar el mapeo de puerto en `docker ps` (debe decir `0.0.0.0:5433->5432/tcp`)
-antes de reintentar la conexión con psql.
-
-**Docker Desktop no está corriendo (error de pipe en Windows):**
-Abrir Docker Desktop manualmente y esperar a que el ícono deje de animarse
-antes de reintentar `docker compose up -d`.
-
-**Borrar todo y empezar de cero (¡pierde los datos!):**
-```
-docker compose down -v
 ```
 
 ## Cargar el sample de e-commerce (master_setup.sql)
@@ -109,6 +77,7 @@ Con el fix aplicado, el setup completo deja aproximadamente:
 - `central_analytics`: ~5.000 clientes, ~11.700 sales_transaction, ~23.400 sales_transaction_line
 - `east_ecommerce_data` / `west_ecommerce_data`: clientes y ventas regionales
 - 31 productos replicados en las 5 bases
+
 ## Troubleshooting
  
 ### Bug conocido: replication slot falla en customer_sales_replication_setup.sql
