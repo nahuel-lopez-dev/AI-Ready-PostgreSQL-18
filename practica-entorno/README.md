@@ -29,7 +29,12 @@ de Packt sin conflictos.
    SELECT extname, extversion FROM pg_extension;
    ```
 
-4. Al terminar de usar la db, parar el contenedor (libera RAM, tengo 8GB):
+4. Al terminar de usar la db, salir de PSQL y parar el contenedor (libera RAM, tengo 8GB):
+
+   ```sql
+   \q
+   ```
+
    ```
    docker compose stop
    ```
