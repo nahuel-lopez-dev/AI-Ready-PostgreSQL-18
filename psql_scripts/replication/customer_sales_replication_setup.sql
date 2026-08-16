@@ -78,17 +78,22 @@ SET vars.slot_5 TO :'sub_slot_5';
 
 \echo 'Connected back to publisher to manage replication slots...'
 -- Conditionally create the  slot to avoid errors on re-runs
-DO $$
-DECLARE
-  sub_slot_5 TEXT := current_setting('vars.slot_5');
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = sub_slot_5) THEN
-        RAISE NOTICE '--> Creating replication slot: %', sub_slot_5;
-        PERFORM pg_create_logical_replication_slot(sub_slot_5, 'pgoutput');
-    ELSE
-        RAISE NOTICE '--> Replication slot % already exists. Skipping creation.', sub_slot_5;
-    END IF;
-END$$;
+-- DO $$
+-- DECLARE
+--   sub_slot_5 TEXT := current_setting('vars.slot_5');
+-- BEGIN
+--     IF NOT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = sub_slot_5) THEN
+--         RAISE NOTICE '--> Creating replication slot: %', sub_slot_5;
+--         PERFORM pg_create_logical_replication_slot(sub_slot_5, 'pgoutput');
+--     ELSE
+--         RAISE NOTICE '--> Replication slot % already exists. Skipping creation.', sub_slot_5;
+--     END IF;
+-- END$$;
+
+\echo 'Connected back to publisher to manage replication slots...'
+\echo '--> Creating replication slot (if not exists):' :'sub_slot_5'
+SELECT pg_create_logical_replication_slot(:'sub_slot_5', 'pgoutput')
+WHERE NOT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = :'sub_slot_5');
 
 
 \c :publisher_db3
@@ -98,17 +103,22 @@ SET vars.slot_6 TO :'sub_slot_6';
 
 -- Conditionally create the  slot to avoid errors on re-runs
 
-DO $$
-DECLARE
-  sub_slot_6 TEXT := current_setting('vars.slot_6');
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = sub_slot_6) THEN
-        RAISE NOTICE '--> Creating replication slot: %', sub_slot_6;
-        PERFORM pg_create_logical_replication_slot(sub_slot_6, 'pgoutput');
-    ELSE
-        RAISE NOTICE '--> Replication slot % already exists. Skipping creation.', sub_slot_6;
-    END IF;
-END$$;
+-- DO $$
+-- DECLARE
+--   sub_slot_6 TEXT := current_setting('vars.slot_6');
+-- BEGIN
+--     IF NOT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = sub_slot_6) THEN
+--         RAISE NOTICE '--> Creating replication slot: %', sub_slot_6;
+--         PERFORM pg_create_logical_replication_slot(sub_slot_6, 'pgoutput');
+--     ELSE
+--         RAISE NOTICE '--> Replication slot % already exists. Skipping creation.', sub_slot_6;
+--     END IF;
+-- END$$;
+
+\echo 'Connected back to publisher to manage replication slots...'
+\echo '--> Creating replication slot (if not exists):' :'sub_slot_6'
+SELECT pg_create_logical_replication_slot(:'sub_slot_6', 'pgoutput')
+WHERE NOT EXISTS (SELECT 1 FROM pg_replication_slots WHERE slot_name = :'sub_slot_6');
 
 -- ================================================================================
 --  Step 4: Enable and Refresh the customer sales transaction on Subscriber
