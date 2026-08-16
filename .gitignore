@@ -8,3 +8,4 @@ psql_scripts/sample_scripts/pgbench-scripts/pgbench_run_summary.txt
 .DS_Store
 logs/
 postgresql/
+practica-entorno/secrets/
